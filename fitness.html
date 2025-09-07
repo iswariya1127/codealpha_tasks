@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fitness Tracker</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 700px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      color: #2563eb;
+    }
+    form {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .summary {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f3f4f6;
+    }
+    .actions button {
+      margin-right: 5px;
+      background: #10b981;
+    }
+    .actions button.delete {
+      background: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏋️ Fitness Tracker</h1>
+
+    <!-- Add Activity Form -->
+    <form id="activityForm">
+      <input type="date" id="date" required />
+      <select id="type" required>
+        <option value="">--Select Activity--</option>
+        <option>Walking</option>
+        <option>Running</option>
+        <option>Workout</option>
+        <option>Cycling</option>
+        <option>Yoga</option>
+      </select>
+      <input type="number" id="duration" placeholder="Duration (minutes)" required />
+      <input type="number" id="steps" placeholder="Steps (optional)" />
+      <input type="number" id="calories" placeholder="Calories (optional)" />
+      <input type="text" id="notes" placeholder="Notes (optional)" />
+      <button type="submit">Add Activity</button>
+    </form>
+
+    <!-- Today Summary -->
+    <div class="summary" id="summary">
+      <h3>📊 Today's Summary</h3>
+      <p>Total Duration: <span id="totalDuration">0</span> min</p>
+      <p>Total Steps: <span id="totalSteps">0</span></p>
+      <p>Total Calories: <span id="totalCalories">0</span></p>
+    </div>
+
+    <!-- History Table -->
+    <h3>📅 Activity History</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Duration</th>
+          <th>Steps</th>
+          <th>Calories</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="history"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const form = document.getElementById("activityForm");
+    const historyTable = document.getElementById("history");
+    const totalDurationEl = document.getElementById("totalDuration");
+    const totalStepsEl = document.getElementById("totalSteps");
+    const totalCaloriesEl = document.getElementById("totalCalories");
+
+    let activities = JSON.parse(localStorage.getItem("activities") || "[]");
+
+    function saveActivities() {
+      localStorage.setItem("activities", JSON.stringify(activities));
+    }
+
+    function renderHistory() {
+      historyTable.innerHTML = "";
+      activities.forEach((a, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${a.date}</td>
+          <td>${a.type}</td>
+          <td>${a.duration}</td>
+          <td>${a.steps || "-"}</td>
+          <td>${a.calories || "-"}</td>
+          <td>${a.notes || "-"}</td>
+          <td class="actions">
+            <button onclick="editActivity(${index})">Edit</button>
+            <button class="delete" onclick="deleteActivity(${index})">Delete</button>
+          </td>
+        `;
+        historyTable.appendChild(row);
+      });
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const today = new Date().toISOString().slice(0, 10);
+      const todayActivities = activities.filter(a => a.date === today);
+      const totalDuration = todayActivities.reduce((sum, a) => sum + Number(a.duration), 0);
+      const totalSteps = todayActivities.reduce((sum, a) => sum + Number(a.steps || 0), 0);
+      const totalCalories = todayActivities.reduce((sum, a) => sum + Number(a.calories || 0), 0);
+
+      totalDurationEl.textContent = totalDuration;
+      totalStepsEl.textContent = totalSteps;
+      totalCaloriesEl.textContent = totalCalories;
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const newActivity = {
+        date: document.getElementById("date").value,
+        type: document.getElementById("type").value,
+        duration: document.getElementById("duration").value,
+        steps: document.getElementById("steps").value,
+        calories: document.getElementById("calories").value,
+        notes: document.getElementById("notes").value,
+      };
+      activities.push(newActivity);
+      saveActivities();
+      renderHistory();
+      form.reset();
+    });
+
+    function editActivity(index) {
+      const a = activities[index];
+      document.getElementById("date").value = a.date;
+      document.getElementById("type").value = a.type;
+      document.getElementById("duration").value = a.duration;
+      document.getElementById("steps").value = a.steps;
+      document.getElementById("calories").value = a.calories;
+      document.getElementById("notes").value = a.notes;
+      deleteActivity(index);
+    }
+
+    function deleteActivity(index) {
+      activities.splice(index, 1);
+      saveActivities();
+      renderHistory();
+    }
+
+    // Initial render
+    renderHistory();
+  </script>
+</body>
+</html>

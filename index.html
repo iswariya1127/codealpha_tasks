@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Random Quote Generator</title>
+  <style>
+    :root {
+      --bg: #0f172a;          /* slate-900 */
+      --card: #0b1227;        /* slightly lighter */
+      --text: #e5e7eb;        /* gray-200 */
+      --muted: #94a3b8;       /* slate-400 */
+      --accent: #22d3ee;      /* cyan-400 */
+      --accent-ink: #0c4a6e;  /* cyan-900 */
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 80% 10%, #1f2937, #0f172a);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+    }
+
+    .card {
+      width: min(92vw, 700px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 28px 26px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    h1 { font-size: clamp(1.1rem, 2vw, 1.25rem); margin: 0 0 6px }
+    .sub { color: var(--muted); margin: 0 0 18px; font-size: .95rem }
+
+    blockquote {
+      font-size: clamp(1.25rem, 3.2vw, 1.8rem);
+      line-height: 1.6;
+      margin: 0;
+      font-weight: 600;
+    }
+    .author {
+      margin-top: 14px;
+      color: var(--muted);
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .row { display: flex; gap: 12px; margin-top: 22px }
+    .row .spacer { flex: 1 }
+
+    button {
+      appearance: none;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .05s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      box-shadow: 0 6px 18px rgba(34, 211, 238, .35);
+    }
+    .primary:active { transform: translateY(1px) }
+    .ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .ghost:active { transform: translateY(1px) }
+
+    .footer { margin-top: 14px; font-size: .85rem; color: var(--muted) }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <header>
+      <h1>Random Quote Generator</h1>
+      <p class="sub">Shows a random quote on load and whenever you click the button. Minimal, clean UI.</p>
+    </header>
+
+    <blockquote id="quote">Loading quote…</blockquote>
+    <div id="author" class="author"></div>
+
+    <div class="row">
+      <button id="newBtn" class="primary" aria-label="Show a new quote">New Quote</button>
+      <div class="spacer"></div>
+      <button id="copyBtn" class="ghost" aria-label="Copy quote to clipboard">Copy</button>
+    </div>
+
+    <div id="status" class="footer" role="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    // --- Option A: local quotes (works fully offline) ------------------------
+    const LOCAL_QUOTES = [
+      { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "Franklin D. Roosevelt" },
+      { text: "The best way to predict the future is to invent it.", author: "Alan Kay" },
+      { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+      { text: "Simplicity is the soul of efficiency.", author: "Austin Freeman" },
+      { text: "Well begun is half done.", author: "Aristotle" },
+      { text: "If you can dream it, you can do it.", author: "Walt Disney" },
+      { text: "Make it work, make it right, make it fast.", author: "Kent Beck" },
+      { text: "What we think, we become.", author: "Buddha" },
+      { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+      { text: "Quality is not an act, it is a habit.", author: "Aristotle" },
+      { text: "Whether you think you can or you think you can't—you're right.", author: "Henry Ford" },
+      { text: "Do one thing every day that scares you.", author: "Eleanor Roosevelt" },
+      { text: "Action is the foundational key to all success.", author: "Pablo Picasso" },
+      { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+      { text: "If opportunity doesn't knock, build a door.", author: "Milton Berle" },
+      { text: "Dream big and dare to fail.", author: "Norman Vaughan" },
+      { text: "A goal without a plan is just a wish.", author: "Antoine de Saint‑Exupéry" },
+      { text: "Done is better than perfect.", author: "Sheryl Sandberg" },
+      { text: "Little by little, one travels far.", author: "J. R. R. Tolkien" },
+      { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" }
+    ];
+
+    // --- Option B: online API (uncomment to use Quotable) --------------------
+    // async function fetchRandomQuote() {
+    //   const res = await fetch('https://api.quotable.io/random');
+    //   if (!res.ok) throw new Error('Network error');
+    //   const data = await res.json();
+    //   return { text: data.content, author: data.author };
+    // }
+
+    const $q = document.getElementById('quote');
+    const $a = document.getElementById('author');
+    const $status = document.getElementById('status');
+    const $new = document.getElementById('newBtn');
+    const $copy = document.getElementById('copyBtn');
+
+    let lastIndex = -1;
+
+    function getRandomLocalQuote() {
+      if (LOCAL_QUOTES.length === 1) return LOCAL_QUOTES[0];
+      let idx;
+      do { idx = Math.floor(Math.random() * LOCAL_QUOTES.length); } while (idx === lastIndex);
+      lastIndex = idx;
+      return LOCAL_QUOTES[idx];
+    }
+
+    async function showQuote() {
+      try {
+        $status.textContent = '';
+        // Use local quotes by default (offline-safe). To use API, replace next line:
+        const q = getRandomLocalQuote();
+        // const q = await fetchRandomQuote();
+        $q.textContent = `“${q.text}”`;
+        $a.textContent = `— ${q.author}`;
+      } catch (e) {
+        $status.textContent = 'Could not load quote. Showing a local one instead.';
+        const q = getRandomLocalQuote();
+        $q.textContent = `“${q.text}”`;
+        $a.textContent = `— ${q.author}`;
+      }
+    }
+
+    $new.addEventListener('click', showQuote);
+
+    $copy.addEventListener('click', async () => {
+      const text = `${$q.textContent} ${$a.textContent}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        flash('Copied to clipboard');
+      } catch {
+        flash('Copy failed');
+      }
+    });
+
+    function flash(msg) {
+      $status.textContent = msg;
+      setTimeout(() => ($status.textContent = ''), 1200);
+    }
+
+    // Show a quote on first load
+    document.addEventListener('DOMContentLoaded', showQuote);
+  </script>
+</body>
+</html>
