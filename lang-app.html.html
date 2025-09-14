@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Language Learning App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="center">
+    <h1>🌍 Language Learning</h1>
+
+    <!-- Flashcard section -->
+    <section id="flashcard-section" class="card">
+      <p id="word" class="word">Loading...</p>
+      <p id="translation" class="translation hidden"></p>
+
+      <div class="controls">
+        <button id="show-translation" class="btn">Show Translation</button>
+        <button id="speak-word" class="btn small">🔊</button>
+      </div>
+    </section>
+
+    <!-- Quiz section -->
+    <section id="quiz-section" class="card">
+      <p id="quiz-question">Question will appear here</p>
+      <div id="quiz-options" class="options"></div>
+      <p id="quiz-feedback" class="feedback"></p>
+      <button id="next-question" class="btn">Next Question</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
